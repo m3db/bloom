@@ -43,7 +43,7 @@ var entropy = []byte{1}[:]
 
 func concurrentBloomFilterHashes(data []byte) [4]uint64 {
 	h1, h2 := murmur3.Sum128(data)
-	h3, h4 := murmur3.Sum128(entropy) // Add entropy
+	h3, h4 := murmur3.SeedSum128(h1, h2, entropy) // Add entropy
 	return [4]uint64{h1, h2, h3, h4}
 }
 
