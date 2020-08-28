@@ -36,16 +36,7 @@ import (
 	"math"
 
 	"github.com/m3db/bitset"
-	"github.com/twmb/murmur3"
 )
-
-var entropy = []byte{1}[:]
-
-func concurrentBloomFilterHashes(data []byte) [4]uint64 {
-	h1, h2 := murmur3.Sum128(data)
-	h3, h4 := murmur3.SeedSum128(h1, h2, entropy) // Add entropy
-	return [4]uint64{h1, h2, h3, h4}
-}
 
 func bloomFilterLocation(h [4]uint64, i, m uint64) uint {
 	v := h[i%2] + i*h[2+(((i+(i%2))%4)/2)]
@@ -90,7 +81,7 @@ func EstimateFalsePositiveRate(n uint, p float64) (m uint, k uint) {
 
 // Add value to the set.
 func (b *BloomFilter) Add(value []byte) {
-	h := concurrentBloomFilterHashes(value)
+	h := sum128WithEntropy(value)
 	for i := uint64(0); i < b.k; i++ {
 		b.set.Set(bloomFilterLocation(h, i, b.m))
 	}
@@ -98,7 +89,7 @@ func (b *BloomFilter) Add(value []byte) {
 
 // Test if value is in the set.
 func (b *BloomFilter) Test(value []byte) bool {
-	h := concurrentBloomFilterHashes(value)
+	h := sum128WithEntropy(value)
 	for i := uint64(0); i < b.k; i++ {
 		if !b.set.Test(bloomFilterLocation(h, i, b.m)) {
 			return false
@@ -146,7 +137,7 @@ func NewReadOnlyBloomFilter(m, k uint, data []byte) *ReadOnlyBloomFilter {
 
 // Test if value is in the set.
 func (b *ReadOnlyBloomFilter) Test(value []byte) bool {
-	h := concurrentBloomFilterHashes(value)
+	h := sum128WithEntropy(value)
 	for i := uint64(0); i < b.k; i++ {
 		if !b.set.Test(bloomFilterLocation(h, i, b.m)) {
 			return false
@@ -194,7 +185,7 @@ func NewConcurrentReadOnlyBloomFilter(
 
 // Test if value is in the set.
 func (b *ConcurrentReadOnlyBloomFilter) Test(value []byte) bool {
-	h := concurrentBloomFilterHashes(value)
+	h := sum128WithEntropy(value)
 	for i := uint64(0); i < b.k; i++ {
 		if !b.set.Test(bloomFilterLocation(h, i, b.m)) {
 			return false

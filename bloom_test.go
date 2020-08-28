@@ -220,7 +220,7 @@ func chiTestBloom(m, k, rounds uint, elements [][]byte) (succeeds bool) {
 	chi := make([]float64, m)
 
 	for _, data := range elements {
-		h := concurrentBloomFilterHashes(data)
+		h := sum128WithEntropy(data)
 		for i := uint64(0); i < f.k; i++ {
 			results[bloomFilterLocation(h, i, f.m)]++
 		}
