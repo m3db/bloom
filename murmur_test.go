@@ -11,15 +11,9 @@ import (
 	twmbmurmur3 "github.com/twmb/murmur3"
 )
 
-// previous implementation using a fork of github.com/spaolacci/murmur3
-func stackConcurrentBloomFilterHashes(data []byte) [4]uint64 {
-	var hash stackmurmur3.Digest128
-	hash = hash.Write(data)
-	h1, h2 := hash.Sum128()
-	hash = hash.Write([]byte{1}) // Add entropy
-	h3, h4 := hash.Sum128()
-	return [4]uint64{h1, h2, h3, h4}
-}
+const _benchStr = `"The quick brown fox jumps over the lazy dog" is an English-language pangram`
+
+var _entropy = []byte{1}
 
 func TestMurmurSum128(t *testing.T) {
 	properties := gopter.NewProperties(newGopterTestParameters())
@@ -43,13 +37,36 @@ func TestBloomFilterHashes(t *testing.T) {
 		func(v []byte) bool {
 			var twmbH, spH [4]uint64
 			twmbH = sum128WithEntropy(v)
-			spH = stackConcurrentBloomFilterHashes(v)
+			spH = concurrentBloomFilterHashes(v)
 			return assert.EqualValues(t, spH, twmbH)
 		},
 		newByteGen(),
 	))
 
 	properties.TestingRun(t)
+}
+
+func BenchmarkBloomFilterHash(b *testing.B) {
+	buf := []byte(_benchStr)
+	for i := 0; i < b.N; i++ {
+		_ = sum128WithEntropy(buf)
+	}
+}
+func BenchmarkBloomFilterHashOld(b *testing.B) {
+	buf := []byte(_benchStr)
+	for i := 0; i < b.N; i++ {
+		_ = concurrentBloomFilterHashes(buf)
+	}
+}
+
+// previous implementation using a fork of github.com/spaolacci/murmur3
+func concurrentBloomFilterHashes(data []byte) [4]uint64 {
+	var hash stackmurmur3.Digest128
+	hash = hash.Write(data)
+	h1, h2 := hash.Sum128()
+	hash = hash.Write(_entropy) // Add entropy
+	h3, h4 := hash.Sum128()
+	return [4]uint64{h1, h2, h3, h4}
 }
 
 func newGopterTestParameters() *gopter.TestParameters {
