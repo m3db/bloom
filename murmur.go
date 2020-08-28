@@ -54,7 +54,7 @@ func sum128WithEntropy(data []byte) [4]uint64 {
 
 	// The following line diverges from twmb/murmur3.Sum128() in a cruicial way:
 	// - for the 2nd hash set for Bloom filter, we need to save seed state to recalculate the hash
-	//   were the *data* was exactly the same, just with the last *byte* being equal to `entropy`
+	//   as if the *data* was exactly the same, just with the last *byte* being equal to `entropy`
 	var _h1, _h2 = h1, h2
 	// end of change from twmb/murmur3
 	var k1, k2 uint64
@@ -138,12 +138,11 @@ func sum128WithEntropy(data []byte) [4]uint64 {
 	k1, k2 = 0, 0
 	h1, h2 = _h1, _h2 // restore state to before final mixing
 	clen++            // total hash data length now includes entropy
-	// Fist, process entropy byte *only*. No fallthrough.
-	// However, if we are really lucky and remainder was 15 bytes, with entropy byte it is now a full block.
-	// In that case, just apply bmix() again, with the modified payload and directly go to hash finalization.
-	rlen := len(data)
 
-	// Check if we're lucky, and have to just perform bmix() of the final chunk
+	rlen := len(data) // remainder length
+
+	// If we are really lucky and remainder was 15 bytes, with entropy byte it is now a full 16 byte block.
+	// In that case, just apply bmix() again, with the modified payload and directly go to hash finalization.
 	if rlen == 15 {
 		k1 = uint64(data[0]) | uint64(data[1])<<8 | uint64(data[2])<<16 | uint64(data[3])<<24 | uint64(data[4])<<32 | uint64(data[5])<<40 | uint64(data[6])<<48 | uint64(data[7])<<56
 		// Note: this is different from original bmix() - we don't mutate `data`,
@@ -171,8 +170,7 @@ func sum128WithEntropy(data []byte) [4]uint64 {
 		goto Finalize
 	}
 
-	// Process entropy byte - note, **no fallthrough**, because
-	// how we process it depends on how long the payload is
+	// Process entropy byte - note, **no fallthrough**, because how we process it depends on how long the payload is
 	switch rlen + 1 {
 	case 15:
 		k2 ^= entropy << 48
@@ -227,9 +225,12 @@ func sum128WithEntropy(data []byte) [4]uint64 {
 		k1 = bits.RotateLeft64(k1, 31)
 		k1 *= c2_128
 		h1 ^= k1
-		goto Finalize // Nothing else to do but finalize the has
+		goto Finalize // Nothing else to do but finalize the hash
 	}
 
+	// Process the rest of the remainder.
+	// Entropy handling siwtch above will directly jump into the code below, depending on remaining
+	// payload length.
 l14:
 	k2 ^= uint64(data[13]) << 40
 l13:
@@ -280,7 +281,7 @@ Finalize:
 	h1 += h2
 	h2 += h1
 
-	// Save 2nd hash, twmb/murmur3.Sum128(data + '\0x01') (byte of entropy)
+	// That's it, save 2nd hash, equivalent of twmb/murmur3.Sum128(data + '\0x01') (byte of entropy)
 	res[2], res[3] = h1, h2
 	return res
 }
