@@ -31,17 +31,19 @@ func TestMurmurTwmbVsStackSum128(t *testing.T) {
 	properties.TestingRun(t)
 }
 
-func TestBloomFilterHashesOldVsNew(t *testing.T) {
+func TestBloomFilterHashesReferenceVsNew(t *testing.T) {
 	properties := gopter.NewProperties(newGopterTestParameters())
-	properties.Property("sum128WithEntropy matches stackmurmur3", prop.ForAll(
-		func(v []byte) bool {
-			var twmbH, spH [4]uint64
-			twmbH = sum128WithEntropy(v)
-			spH = concurrentBloomFilterHashes(v)
-			return assert.EqualValues(t, spH, twmbH)
-		},
-		newByteGen(),
-	))
+	properties.Property("sum128WithEntropy matches reference stackmurmur3-based implementation",
+		prop.ForAll(
+			func(v []byte) bool {
+				var twmbH, spH [4]uint64
+				twmbH = sum128WithEntropy(v)
+				spH = concurrentBloomFilterHashes(v)
+				return assert.EqualValues(t, spH, twmbH)
+			},
+			newByteGen(),
+		),
+	)
 
 	properties.TestingRun(t)
 }
@@ -52,14 +54,14 @@ func BenchmarkBloomFilterHash(b *testing.B) {
 		_ = sum128WithEntropy(buf)
 	}
 }
-func BenchmarkBloomFilterHashOld(b *testing.B) {
+func BenchmarkBloomFilterHashReference(b *testing.B) {
 	buf := []byte(_benchStr)
 	for i := 0; i < b.N; i++ {
 		_ = concurrentBloomFilterHashes(buf)
 	}
 }
 
-// previous implementation using a fork of github.com/spaolacci/murmur3
+// reference implementation using a fork of github.com/spaolacci/murmur3
 func concurrentBloomFilterHashes(data []byte) [4]uint64 {
 	var hash stackmurmur3.Digest128
 	hash = hash.Write(data)
