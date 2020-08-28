@@ -148,8 +148,41 @@ func BenchmarkBloomFilterHash(b *testing.B) {
 		_ = sum128WithEntropy(buf)
 	}
 }
+
+func BenchmarkBloomFilterHash15(b *testing.B) {
+	//  payload is not a multiple of 16 bytes, tail is 15 bytes
+	buf := []byte(_benchStr + _benchStr)[:127]
+	for i := 0; i < b.N; i++ {
+		_ = sum128WithEntropy(buf)
+	}
+}
+
+func BenchmarkBloomFilterHash16(b *testing.B) {
+	// payload is a multiple of 16 bytes
+	buf := []byte(_benchStr + _benchStr)[:128]
+	for i := 0; i < b.N; i++ {
+		_ = sum128WithEntropy(buf)
+	}
+}
+
 func BenchmarkBloomFilterHashReference(b *testing.B) {
 	buf := []byte(_benchStr)
+	for i := 0; i < b.N; i++ {
+		_ = concurrentBloomFilterHashesReference(buf)
+	}
+}
+
+func BenchmarkBloomFilterHashReference15(b *testing.B) {
+	//  payload is not a multiple of 16 bytes, tail is 15 bytes
+	buf := []byte(_benchStr + _benchStr)[:127]
+	for i := 0; i < b.N; i++ {
+		_ = concurrentBloomFilterHashesReference(buf)
+	}
+}
+
+func BenchmarkBloomFilterHashReference16(b *testing.B) {
+	// payload is a multiple of 16 bytes
+	buf := []byte(_benchStr + _benchStr)[:128]
 	for i := 0; i < b.N; i++ {
 		_ = concurrentBloomFilterHashesReference(buf)
 	}
