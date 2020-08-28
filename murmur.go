@@ -132,7 +132,7 @@ func sum128WithEntropy(data []byte) [4]uint64 {
 	res[0], res[1] = h1, h2
 
 	// Now, reset state back to before the tail calculation.
-	// The state is such that all but up to final 15 bytes have been processed, as murmur3 works
+	// The state is such that all but final 15 bytes have been processed, as murmur3 works
 	// on 128 bit / 16 byte chunks for all but the final mixing.
 	// last byte of the array, and apply the Sum128() logic accordingly.
 	k1, k2 = 0, 0
@@ -172,10 +172,10 @@ func sum128WithEntropy(data []byte) [4]uint64 {
 
 	// Process entropy byte - note, **no fallthrough**, because how we process it depends on how long the payload is
 	switch rlen + 1 {
-	case 15:
+	case 15: // the entropy byte index is 15
 		k2 ^= entropy << 48
-		goto l14
-	case 14:
+		goto l14 // jump into processing rest of the array, at position 14
+	case 14: // entropy byte index is 14 ...
 		k2 ^= entropy << 40
 		goto l13
 	case 13:
@@ -228,9 +228,9 @@ func sum128WithEntropy(data []byte) [4]uint64 {
 		goto Finalize // Nothing else to do but finalize the hash
 	}
 
-	// Process the rest of the remainder.
-	// Entropy handling siwtch above will directly jump into the code below, depending on remaining
-	// payload length.
+	// Process the payload that is before entropy byte.
+	// Entropy was handled in the switch above: it will directly jump into the code below,
+	// depending on remaining payload length.
 l14:
 	k2 ^= uint64(data[13]) << 40
 l13:
