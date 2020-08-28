@@ -15,7 +15,7 @@ const _benchStr = `"The quick brown fox jumps over the lazy dog" is an English-l
 
 var _entropy = []byte{1}
 
-func TestMurmurSum128(t *testing.T) {
+func TestMurmurTwmbVsStackSum128(t *testing.T) {
 	properties := gopter.NewProperties(newGopterTestParameters())
 	properties.Property("twmb digest matches spaolacci", prop.ForAll(
 		func(v []byte) bool {
@@ -31,7 +31,7 @@ func TestMurmurSum128(t *testing.T) {
 	properties.TestingRun(t)
 }
 
-func TestBloomFilterHashes(t *testing.T) {
+func TestBloomFilterHashesOldVsNew(t *testing.T) {
 	properties := gopter.NewProperties(newGopterTestParameters())
 	properties.Property("sum128WithEntropy matches stackmurmur3", prop.ForAll(
 		func(v []byte) bool {
