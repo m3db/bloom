@@ -64,10 +64,10 @@ func TestConcurrent(t *testing.T) {
 	wg.Wait()
 
 	if err1 != nil {
-		t.Error(err1)
+		t.Fatalf("bloom test 1 failed: %v", err1)
 	}
 	if err2 != nil {
-		t.Error(err2)
+		t.Fatalf("bloom test 2 failed: %v", err2)
 	}
 }
 
