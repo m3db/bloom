@@ -176,36 +176,50 @@ func sum128WithEntropy(data []byte) [4]uint64 {
 	switch rlen + 1 {
 	case 15:
 		k2 ^= entropy << 48
+		goto l14
 	case 14:
 		k2 ^= entropy << 40
+		goto l13
 	case 13:
 		k2 ^= entropy << 32
+		goto l12
 	case 12:
 		k2 ^= entropy << 24
+		goto l11
 	case 11:
 		k2 ^= entropy << 16
+		goto l10
 	case 10:
 		k2 ^= entropy << 8
+		goto l9
 	case 9:
 		k2 ^= entropy << 0
 		k2 *= c2_128
 		k2 = bits.RotateLeft64(k2, 33)
 		k2 *= c1_128
 		h2 ^= k2
+		goto l8
 	case 8:
 		k1 ^= entropy << 56
+		goto l7
 	case 7:
 		k1 ^= entropy << 48
+		goto l6
 	case 6:
 		k1 ^= entropy << 40
+		goto l5
 	case 5:
 		k1 ^= entropy << 32
+		goto l4
 	case 4:
 		k1 ^= entropy << 24
+		goto l3
 	case 3:
 		k1 ^= entropy << 16
+		goto l2
 	case 2:
 		k1 ^= entropy << 8
+		goto l1
 	case 1:
 		// Case where entropy byte is the actual tail (payload length is a multiple of 16 bytes)
 		k1 ^= entropy << 0
@@ -213,64 +227,45 @@ func sum128WithEntropy(data []byte) [4]uint64 {
 		k1 = bits.RotateLeft64(k1, 31)
 		k1 *= c2_128
 		h1 ^= k1
-		// Nothing else to do but finalize the hash
-		goto Finalize
+		goto Finalize // Nothing else to do but finalize the has
 	}
 
-	switch rlen {
-	case 14:
-		k2 ^= uint64(data[13]) << 40
-		fallthrough
-	case 13:
-		k2 ^= uint64(data[12]) << 32
-		fallthrough
-	case 12:
-		k2 ^= uint64(data[11]) << 24
-		fallthrough
-	case 11:
-		k2 ^= uint64(data[10]) << 16
-		fallthrough
-	case 10:
-		k2 ^= uint64(data[9]) << 8
-		fallthrough
-	case 9:
-		k2 ^= uint64(data[8]) << 0
-
-		k2 *= c2_128
-		k2 = bits.RotateLeft64(k2, 33)
-		k2 *= c1_128
-		h2 ^= k2
-
-		fallthrough
-
-	case 8:
-		k1 ^= uint64(data[7]) << 56
-		fallthrough
-	case 7:
-		k1 ^= uint64(data[6]) << 48
-		fallthrough
-	case 6:
-		k1 ^= uint64(data[5]) << 40
-		fallthrough
-	case 5:
-		k1 ^= uint64(data[4]) << 32
-		fallthrough
-	case 4:
-		k1 ^= uint64(data[3]) << 24
-		fallthrough
-	case 3:
-		k1 ^= uint64(data[2]) << 16
-		fallthrough
-	case 2:
-		k1 ^= uint64(data[1]) << 8
-		fallthrough
-	case 1:
-		k1 ^= uint64(data[0]) << 0
-		k1 *= c1_128
-		k1 = bits.RotateLeft64(k1, 31)
-		k1 *= c2_128
-		h1 ^= k1
-	}
+l14:
+	k2 ^= uint64(data[13]) << 40
+l13:
+	k2 ^= uint64(data[12]) << 32
+l12:
+	k2 ^= uint64(data[11]) << 24
+l11:
+	k2 ^= uint64(data[10]) << 16
+l10:
+	k2 ^= uint64(data[9]) << 8
+l9:
+	k2 ^= uint64(data[8]) << 0
+	k2 *= c2_128
+	k2 = bits.RotateLeft64(k2, 33)
+	k2 *= c1_128
+	h2 ^= k2
+l8:
+	k1 ^= uint64(data[7]) << 56
+l7:
+	k1 ^= uint64(data[6]) << 48
+l6:
+	k1 ^= uint64(data[5]) << 40
+l5:
+	k1 ^= uint64(data[4]) << 32
+l4:
+	k1 ^= uint64(data[3]) << 24
+l3:
+	k1 ^= uint64(data[2]) << 16
+l2:
+	k1 ^= uint64(data[1]) << 8
+l1:
+	k1 ^= uint64(data[0]) << 0
+	k1 *= c1_128
+	k1 = bits.RotateLeft64(k1, 31)
+	k1 *= c2_128
+	h1 ^= k1
 
 Finalize:
 	h1 ^= uint64(clen)
