@@ -6,3 +6,7 @@ testImport:
   subpackages:
   - assert
   - require
+- package: github.com/twmb/murmur3
+  version: ^1.1.4
+- package: github.com/leanovate/gopter
+  version: ^0.2.8
