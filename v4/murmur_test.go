@@ -9,31 +9,15 @@ import (
 	"github.com/leanovate/gopter"
 	"github.com/leanovate/gopter/gen"
 	"github.com/leanovate/gopter/prop"
-	"github.com/m3db/bloom/testdata"
-	stackmurmur3 "github.com/m3db/stackmurmur3"
+	testdata "github.com/m3db/bloom/v4/testdata"
+	murmur3 "github.com/m3db/stackmurmur3/v2"
+	"github.com/m3db/stackmurmur3/v2/stackmurmur3"
 	"github.com/stretchr/testify/assert"
-	twmbmurmur3 "github.com/twmb/murmur3"
 )
 
 const _benchStr = `"The quick brown fox jumps over the lazy dog" is an English-language pangram`
 
 var _entropy = []byte{1}
-
-func TestMurmurTwmbVsStackSum128(t *testing.T) {
-	properties := gopter.NewProperties(newGopterTestParameters())
-	properties.Property("twmb digest matches spaolacci", prop.ForAll(
-		func(v []byte) bool {
-			twmbH1, twmbH2 := twmbmurmur3.Sum128(v)
-			var hash stackmurmur3.Digest128
-			hash = hash.Write(v)
-			spH1, spH2 := hash.Sum128()
-			return spH1 == twmbH1 && spH2 == twmbH2
-		},
-		newByteGen(),
-	))
-
-	properties.TestingRun(t)
-}
 
 func TestBloomFilterHashesReferenceVsNew(t *testing.T) {
 	properties := gopter.NewProperties(newGopterTestParameters())
@@ -52,22 +36,6 @@ func TestBloomFilterHashesReferenceVsNew(t *testing.T) {
 	properties.TestingRun(t)
 }
 
-func TestBloomFilterHashesTwmbVsNew(t *testing.T) {
-	properties := gopter.NewProperties(newGopterTestParameters())
-	properties.Property("sum128WithEntropy matches reference stackmurmur3-based implementation",
-		prop.ForAll(
-			func(v []byte) bool {
-				var twmbH, spH [4]uint64
-				twmbH = sum128WithEntropy(v)
-				spH = concurrentBloomFilterHashesTwmb(v)
-				return assert.EqualValues(t, spH, twmbH)
-			},
-			newByteGen(),
-		),
-	)
-
-	properties.TestingRun(t)
-}
 func TestBloomFilterHashesTwmbTestSuite(t *testing.T) {
 	for _, test := range []struct {
 		h64_1 uint64
@@ -81,7 +49,7 @@ func TestBloomFilterHashesTwmbTestSuite(t *testing.T) {
 		{0xb89e5988b737affc, 0x664fc2950231b2cb, "19 Jan 2038 at 3:14:07 AM"},
 		{0xcd99481f9ee902c9, 0x695da1a38987b6e7, "The quick brown fox jumps over the lazy dog."},
 	} {
-		refh1, refh2 := twmbmurmur3.StringSum128(test.s)
+		refh1, refh2 := murmur3.StringSum128(test.s)
 		hash := sum128WithEntropy([]byte(test.s))
 		assert.EqualValues(t, refh1, hash[0])
 		assert.EqualValues(t, refh2, hash[1])
@@ -191,16 +159,6 @@ func BenchmarkBloomFilterHashReference16(b *testing.B) {
 // reference implementation using a fork of github.com/spaolacci/murmur3
 func concurrentBloomFilterHashesReference(data []byte) [4]uint64 {
 	var hash stackmurmur3.Digest128
-	hash = hash.Write(data)
-	h1, h2 := hash.Sum128()
-	hash = hash.Write(_entropy) // Add entropy
-	h3, h4 := hash.Sum128()
-	return [4]uint64{h1, h2, h3, h4}
-}
-
-// reference implementation using a fork of github.com/twmb/murmur3
-func concurrentBloomFilterHashesTwmb(data []byte) [4]uint64 {
-	var hash = twmbmurmur3.New128()
 	hash.Write(data)
 	h1, h2 := hash.Sum128()
 	hash.Write(_entropy) // Add entropy
